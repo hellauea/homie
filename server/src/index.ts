@@ -50,6 +50,8 @@ const io = new Server(httpServer, {
   pingTimeout: 20000,
 });
 
+app.set('io', io);
+
 // Socket auth + handlers
 io.use(socketAuthMiddleware);
 registerSocketHandlers(io);

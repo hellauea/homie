@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
+import { setupSocketListeners } from './socketEvents';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL!;
 
@@ -18,6 +19,8 @@ export async function connectSocket(): Promise<Socket> {
     reconnectionAttempts: 10,
     reconnectionDelay: 2000,
   });
+
+  setupSocketListeners(socket);
 
   socket.on('connect', () => {
     console.log('[Socket] Connected:', socket?.id);

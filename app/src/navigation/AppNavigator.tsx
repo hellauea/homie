@@ -6,6 +6,8 @@ import { ActivityIndicator, View } from 'react-native';
 import AuthScreen from '../screens/AuthScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ChatScreen from '../screens/ChatScreen';
+import GroupInfoScreen from '../screens/GroupInfoScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 import { useAuthStore } from '../store/authStore';
 import { getMe } from '../services/api';
@@ -16,6 +18,8 @@ export type RootStackParamList = {
   Auth: undefined;
   Home: undefined;
   Chat: { conversationId: string; name: string };
+  GroupInfo: { conversationId: string };
+  Profile: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -80,6 +84,16 @@ export default function AppNavigator() {
               name="Chat"
               component={ChatScreen}
               options={({ route }) => ({ title: route.params.name })}
+            />
+            <Stack.Screen
+              name="GroupInfo"
+              component={GroupInfoScreen}
+              options={{ title: 'Group Info' }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ title: 'Edit Profile' }}
             />
           </>
         )}

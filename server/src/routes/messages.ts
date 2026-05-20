@@ -77,6 +77,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`conv:${conversationId}`).emit('new_message', message);
+  }
+
   res.status(201).json(message);
 });
 
@@ -93,7 +98,7 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
 
   const { data: message } = await db
     .from('messages')
-    .select('id, sender_id, created_at, type')
+    .select('id, sender_id, created_at, type, conversation_id')
     .eq('id', id)
     .maybeSingle();
 
@@ -132,6 +137,11 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`conv:${message.conversation_id}`).emit('message_edited', updated);
+  }
+
   res.json(updated);
 });
 
@@ -142,7 +152,7 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
 
   const { data: message } = await db
     .from('messages')
-    .select('id, sender_id')
+    .select('id, sender_id, conversation_id')
     .eq('id', id)
     .maybeSingle();
 
@@ -164,6 +174,14 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   if (error) {
     res.status(500).json({ error: 'delete_failed', message: 'Failed to delete message' });
     return;
+  }
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`conv:${message.conversation_id}`).emit('message_deleted', {
+      conversationId: message.conversation_id,
+      messageId: id,
+    });
   }
 
   res.json({ ok: true });
@@ -306,6 +324,15 @@ router.post('/:id/reactions', async (req: Request, res: Response): Promise<void>
     return;
   }
 
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`conv:${message.conversation_id}`).emit('reaction_added', {
+      conversationId: message.conversation_id,
+      messageId: id,
+      reaction: { emoji, user_id: userId }
+    });
+  }
+
   res.status(201).json({ ok: true });
 });
 
@@ -313,6 +340,17 @@ router.post('/:id/reactions', async (req: Request, res: Response): Promise<void>
 router.delete('/:id/reactions/:emoji', async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.userId;
   const { id, emoji } = req.params;
+
+  const { data: message } = await db
+    .from('messages')
+    .select('conversation_id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (!message) {
+    res.status(404).json({ error: 'not_found', message: 'Message not found' });
+    return;
+  }
 
   const { error } = await db
     .from('reactions')
@@ -324,6 +362,16 @@ router.delete('/:id/reactions/:emoji', async (req: Request, res: Response): Prom
   if (error) {
     res.status(500).json({ error: 'remove_reaction_failed', message: 'Failed to remove reaction' });
     return;
+  }
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`conv:${message.conversation_id}`).emit('reaction_removed', {
+      conversationId: message.conversation_id,
+      messageId: id,
+      emoji,
+      user_id: userId,
+    });
   }
 
   res.json({ ok: true });

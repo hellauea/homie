@@ -101,20 +101,11 @@ export default function ChatScreen() {
   }
 
   // Send message or edit message
-  async function handleSend(text: string) {
+  async function handleSend(text: string, type: 'text' | 'image' | 'video' | 'file' | 'voice' = 'text') {
     if (editingMessage) {
-      // Edit mode
+      // Edit mode (only text editing is supported)
       try {
-        await api.updateConversation(editingMessage.conversation_id, { name: text }); // Server fallbacks or let's use edit API
-        // Wait, let's look at api.ts for edit message.
-        // Ah, in api.ts we don't have patchMessage exposed but wait! We can edit a message via REST:
-        // PATCH /messages/:id -> { content: string }
-        // Let's call api.api.patch directly since it's an axios instance!
-        const res = await api.api.patch(`/messages/${editingMessage.id}`, { content: text });
-        // The socket listener or local store will update the message.
-        // Wait, does server routes/messages.ts return updated message? Yes!
-        // Since we patched server/src/routes/messages.ts, it emits 'message_edited' socket event!
-        // That's perfect.
+        await api.api.patch(`/messages/${editingMessage.id}`, { content: text });
       } catch (err) {
         console.error('Failed to edit message:', err);
       } finally {
@@ -127,6 +118,7 @@ export default function ChatScreen() {
         socket.emit('send_message', {
           conversationId,
           content: text,
+          type,
           replyToId: replyingTo?.id,
         });
       }

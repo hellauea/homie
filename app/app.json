@@ -16,11 +16,6 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/auth"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      }
-    }
+    ]
   }
 }

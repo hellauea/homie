@@ -5,6 +5,21 @@ import { requireAuth } from '../middleware/auth';
 const router = Router();
 router.use(requireAuth);
 
+// GET /users — list all active users (for starting chats)
+router.get('/', async (req: Request, res: Response): Promise<void> => {
+  const { data: users, error } = await db
+    .from('users')
+    .select('id, name, avatar_url, last_seen')
+    .eq('is_active', true);
+
+  if (error) {
+    res.status(500).json({ error: 'db_error', message: 'Failed to fetch users' });
+    return;
+  }
+
+  res.json(users ?? []);
+});
+
 // GET /users/:id
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;

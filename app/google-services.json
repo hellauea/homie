@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "141986040509",
+    "project_id": "squaad-chat",
+    "storage_bucket": "squaad-chat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:141986040509:android:39af9246ef03f9114ec5d4",
+        "android_client_info": {
+          "package_name": "com.squaad.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcCvOet1mivGYacmcBNTsCCe64ReSIo8w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -89,7 +89,7 @@ export default function AppNavigator() {
           if (navigationRef.isReady()) {
             navigationRef.navigate('Chat', {
               conversationId: data.conversationId,
-              name: data.conversationName || 'Squaad Chat',
+              name: data.conversationName || 'Homie Chat',
             });
           }
         }, 100);
@@ -136,7 +136,7 @@ export default function AppNavigator() {
           name: 'default',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#5b21b6',
+          lightColor: '#6c35de',
         });
       }
     } catch (err) {
@@ -146,8 +146,8 @@ export default function AppNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0f0f0f', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator color="#5b21b6" size="large" />
+      <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#6c35de" size="large" />
       </View>
     );
   }
@@ -156,10 +156,10 @@ export default function AppNavigator() {
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: '#0f0f0f' },
-          headerTintColor: '#fff',
+          headerStyle: { backgroundColor: '#000000', shadowColor: 'transparent', elevation: 0 },
+          headerTintColor: '#ffffff',
           headerTitleStyle: { fontWeight: '700' },
-          cardStyle: { backgroundColor: '#0f0f0f' },
+          cardStyle: { backgroundColor: '#000000' },
         }}
       >
         {!isAuthenticated ? (
@@ -170,15 +170,16 @@ export default function AppNavigator() {
           />
         ) : (
           <>
+            {/* Custom headers rendered inside Home and Chat screen */}
             <Stack.Screen
               name="Home"
               component={HomeScreen}
-              options={{ title: 'Squaad' }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="Chat"
               component={ChatScreen}
-              options={({ route }) => ({ title: route.params.name })}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="GroupInfo"

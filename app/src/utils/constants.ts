@@ -1,31 +1,32 @@
 // ============================================================
-// Squaad — Design Tokens & Constants
+// Homie — Design Tokens & Constants (Instagram DM Style)
 // ============================================================
 
 export const COLORS = {
   // Theme Backgrounds
-  background: '#09090b',     // Deep zinc black
-  card: '#18181b',           // Sleek slate dark card
-  cardSecondary: '#27272a',  // Mid zinc slate
-  border: '#27272a',         // Thin border accent
+  background: '#000000',       // Pure black (Instagram)
+  card: '#121212',             // Slightly lifted card surface
+  cardSecondary: '#1c1c1e',    // Secondary card (input fields)
+  border: '#262626',           // Instagram dark border
   
   // Brand / Interactive Accents
-  primary: '#6366f1',        // Vibrant Indigo
-  primaryLight: '#818cf8',   // Light Indigo (highlights/interactive)
-  secondary: '#a78bfa',      // Pastel Violet
-  accent: '#10b981',         // Emerald Green (presence, confirmations)
-  danger: '#ef4444',         // Rose Red (deletions, logs out)
-  warning: '#f59e0b',        // Amber Gold
+  primary: '#6c35de',          // Purple (own bubble base)
+  primaryLight: '#9b59f0',     // Lighter purple highlights
+  bubbleGradientEnd: '#d63384',// Pink gradient terminus
+  accent: '#0095f6',           // Instagram blue (links, unread)
+  onlineGreen: '#44d62c',      // Instagram online presence green
+  danger: '#ed4956',           // Instagram red (delete, errors)
+  warning: '#f59e0b',          // Amber Gold
   
   // Typography
-  textPrimary: '#f4f4f5',    // Zinc light white
-  textSecondary: '#a1a1aa',  // Muted gray
-  textMuted: '#52525b',      // Muted zinc dark
-  textLight: '#ffffff',      // Pure white
+  textPrimary: '#ffffff',      // Pure white
+  textSecondary: '#8e8e8e',    // Instagram grey
+  textMuted: '#555555',        // Muted dark grey
+  textLight: '#ffffff',        // Pure white
   
   // Message bubbles
-  bubbleSelf: '#6366f1',     // Indigo solid for user messages
-  bubbleOther: '#1f1f23',    // Very dark gray for other messages
+  bubbleSelf: '#6c35de',       // Purple for user messages (gradient start)
+  bubbleOther: '#1c1c1e',      // Dark grey for other messages
 };
 
 export const SPACING = {
@@ -54,5 +55,5 @@ export const TYPOGRAPHY = {
   }
 };
 
-export const SOCKET_URL = 'http://localhost:5000'; // Fallback URL, typically updated from store/env
+export const SOCKET_URL = 'http://localhost:5000'; // Fallback URL
 export const API_URL = 'http://localhost:5000/api';

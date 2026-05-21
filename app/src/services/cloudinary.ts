@@ -18,7 +18,7 @@ export async function uploadToCloudinary(
   fileType: 'image' | 'video' | 'file' | 'voice'
 ): Promise<string> {
   // 1. Get signed credentials from server
-  const folderName = fileType === 'voice' ? 'voice_notes' : 'squaad_media';
+  const folderName = fileType === 'voice' ? 'voice_notes' : 'homie_media';
   const { data: signData } = await api.post<SignResponse>('/media/sign', {
     folder: folderName,
   });

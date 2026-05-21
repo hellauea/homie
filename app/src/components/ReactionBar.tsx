@@ -9,12 +9,16 @@ interface ReactionBarProps {
   onReactionPress: (emoji: string) => void;
 }
 
-export default function ReactionBar({ reactions, currentUserId, onReactionPress }: ReactionBarProps) {
+export default function ReactionBar({
+  reactions,
+  currentUserId,
+  onReactionPress,
+}: ReactionBarProps) {
   if (!reactions || reactions.length === 0) return null;
 
   // Group reactions by emoji
   const grouped: Record<string, { count: number; hasSelf: boolean }> = {};
-  
+
   reactions.forEach((r) => {
     if (!grouped[r.emoji]) {
       grouped[r.emoji] = { count: 0, hasSelf: false };
@@ -32,15 +36,13 @@ export default function ReactionBar({ reactions, currentUserId, onReactionPress 
           key={emoji}
           style={[
             styles.chip,
-            info.hasSelf ? styles.chipSelf : null,
+            info.hasSelf && styles.chipSelf,
           ]}
           onPress={() => onReactionPress(emoji)}
           activeOpacity={0.7}
         >
           <Text style={styles.emojiText}>{emoji}</Text>
-          <Text style={[styles.countText, info.hasSelf ? styles.countTextSelf : null]}>
-            {info.count}
-          </Text>
+          <Text style={styles.countText}>{info.count}</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -51,33 +53,29 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 4,
     gap: 4,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1f1f23', // Dark background for other reactions
+    backgroundColor: COLORS.border, // #262626
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: '#363636',
   },
   chipSelf: {
-    backgroundColor: 'rgba(99, 102, 241, 0.15)', // Indigo tint
-    borderColor: 'rgba(99, 102, 241, 0.4)',
+    borderColor: COLORS.primary, // #6c35de
+    backgroundColor: 'rgba(108,53,222,0.15)',
   },
   emojiText: {
     fontSize: 12,
-    marginRight: 4,
+    marginRight: 3,
   },
   countText: {
     fontSize: 10,
+    color: COLORS.textPrimary, // #ffffff
     fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  countTextSelf: {
-    color: COLORS.primaryLight,
   },
 });

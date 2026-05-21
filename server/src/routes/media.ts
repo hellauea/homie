@@ -19,7 +19,7 @@ router.post('/sign', async (req: Request, res: Response): Promise<void> => {
   }
 
   const timestamp = Math.round(Date.now() / 1000);
-  const uploadFolder = folder ?? 'squaad_uploads';
+  const uploadFolder = folder ?? 'homie_uploads';
 
   const signature = cloudinary.utils.api_sign_request(
     { timestamp, folder: uploadFolder },

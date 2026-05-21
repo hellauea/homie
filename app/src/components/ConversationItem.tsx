@@ -12,11 +12,14 @@ interface ConversationItemProps {
   onPress: () => void;
 }
 
+const EMPTY_TYPING: any[] = [];
+
 export default function ConversationItem({ conversation, onPress }: ConversationItemProps) {
   const currentUserId = useAuthStore((state) => state.user?.id);
-  const typingUsersList = useUIStore((state) => state.typingUsers[conversation.id] ?? []);
-  
-  // Resolve conversation title and avatar
+  const typingUsersList = useUIStore((state) => state.typingUsers[conversation.id] ?? EMPTY_TYPING);
+  const onlineUsers = useUIStore((state) => state.onlineUsers);
+
+  // Resolve display info for DM vs group
   let displayName = conversation.name ?? 'Chat';
   let avatarUrl = conversation.avatar_url;
   let isOnline = false;
@@ -26,22 +29,22 @@ export default function ConversationItem({ conversation, onPress }: Conversation
     if (otherUser) {
       displayName = otherUser.name;
       avatarUrl = otherUser.avatar_url;
-      isOnline = useUIStore((state) => state.onlineUsers[otherUser.id] ?? false);
+      isOnline = onlineUsers[otherUser.id] ?? false;
     }
   }
 
-  // Determine message preview text
+  // Build preview text
   let previewText = 'No messages yet';
   let previewTime = '';
-  
-  const lastMsg = conversation.last_message;
 
-  if (typingUsersList.length > 0) {
-    const names = typingUsersList.map((u) => u.userName.split(' ')[0]);
-    previewText = `${names.join(', ')} typing...`;
+  const lastMsg = conversation.last_message;
+  const isTyping = typingUsersList.length > 0;
+
+  if (isTyping) {
+    previewText = 'typing...';
   } else if (lastMsg) {
     previewTime = formatConversationDate(lastMsg.created_at);
-    
+
     const isSelf = lastMsg.sender_id === currentUserId;
     const prefix = isSelf ? 'You: ' : '';
 
@@ -54,43 +57,41 @@ export default function ConversationItem({ conversation, onPress }: Conversation
     }
   }
 
-  const isTyping = typingUsersList.length > 0;
   const unreadCount = conversation.unread_count ?? 0;
+  const hasUnread = unreadCount > 0;
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.6}>
       <Avatar
         name={displayName}
         avatarUrl={avatarUrl}
         isOnline={conversation.type === 'dm' ? isOnline : false}
-        size={50}
+        size={56}
       />
-      
+
       <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.name} numberOfLines={1}>
+        {/* Top row: name + timestamp */}
+        <View style={styles.topRow}>
+          <Text
+            style={[styles.name, hasUnread && styles.nameUnread]}
+            numberOfLines={1}
+          >
             {displayName}
           </Text>
-          {previewTime ? <Text style={styles.time}>{previewTime}</Text> : null}
+          {previewTime ? (
+            <Text style={styles.timestamp}>{previewTime}</Text>
+          ) : null}
         </View>
-        
-        <View style={styles.footer}>
+
+        {/* Bottom row: preview + unread dot */}
+        <View style={styles.bottomRow}>
           <Text
-            style={[
-              styles.preview,
-              isTyping ? styles.typingText : null,
-              unreadCount > 0 && !isTyping ? styles.unreadText : null,
-            ]}
+            style={[styles.preview, isTyping && styles.previewTyping]}
             numberOfLines={1}
           >
             {truncate(previewText, 45)}
           </Text>
-          
-          {unreadCount > 0 ? (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
-            </View>
-          ) : null}
+          {hasUnread && !isTyping ? <View style={styles.unreadDot} /> : null}
         </View>
       </View>
     </TouchableOpacity>
@@ -101,64 +102,51 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: '#09090b', // Deep zinc black
-    borderBottomWidth: 1,
-    borderBottomColor: '#18181b', // Slight zinc divider
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.background,
   },
   content: {
     flex: 1,
-    marginLeft: SPACING.md,
+    marginLeft: 12,
+    justifyContent: 'center',
   },
-  header: {
+  topRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
   name: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    flex: 1,
     marginRight: 8,
   },
-  time: {
+  nameUnread: {
+    fontWeight: '700',
+  },
+  timestamp: {
     fontSize: 12,
     color: COLORS.textSecondary,
   },
-  footer: {
+  bottomRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
   preview: {
+    flex: 1,
     fontSize: 14,
     color: COLORS.textSecondary,
-    flex: 1,
   },
-  typingText: {
-    color: COLORS.primaryLight,
-    fontWeight: '500',
+  previewTyping: {
+    color: COLORS.onlineGreen,
   },
-  unreadText: {
-    color: COLORS.textPrimary,
-    fontWeight: '500',
-  },
-  unreadBadge: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.accent,
     marginLeft: 8,
-  },
-  unreadBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
   },
 });

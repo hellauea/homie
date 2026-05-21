@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,10 +8,11 @@ import {
   Text,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
+  Alert,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
 import { useChatStore } from '../store/chatStore';
@@ -22,10 +23,13 @@ import * as api from '../services/api';
 import MessageBubble from '../components/MessageBubble';
 import MessageActions from '../components/MessageActions';
 import ChatInput from '../components/ChatInput';
+import Avatar from '../components/Avatar';
 import { COLORS, SPACING } from '../utils/constants';
 
 type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 type ChatScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Chat'>;
+
+const EMPTY_TYPING: any[] = [];
 
 export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
@@ -48,31 +52,26 @@ export default function ChatScreen() {
   const hasMore = hasMoreMap[conversationId] ?? true;
   const isLoading = isLoadingMessages[conversationId] ?? false;
 
-  const typingUsers = useUIStore((state) => state.typingUsers[conversationId] ?? []);
-  // Filter out self if any
+  const typingUsers = useUIStore((state) => state.typingUsers[conversationId] ?? EMPTY_TYPING);
+  const onlineUsers = useUIStore((state) => state.onlineUsers);
+
+  // Filter out self
   const otherTypingUsers = typingUsers.filter((u) => u.userId !== currentUserId);
+
+  // Determine active status subtitle
+  let isOnline = false;
+  if (!isGroup && conversation?.type === 'dm') {
+    const otherUser = conversation.otherUser;
+    if (otherUser) {
+      isOnline = onlineUsers[otherUser.id] ?? false;
+    }
+  }
 
   // States for actions, replying, and editing
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [actionsVisible, setActionsVisible] = useState(false);
   const [replyingTo, setReplyingTo] = useState<any>(null);
   const [editingMessage, setEditingMessage] = useState<any>(null);
-
-  // Set up header buttons
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: name,
-      headerRight: () =>
-        isGroup ? (
-          <TouchableOpacity
-            style={styles.headerInfoBtn}
-            onPress={() => navigation.navigate('GroupInfo', { conversationId })}
-          >
-            <Text style={styles.headerInfoText}>ℹ️</Text>
-          </TouchableOpacity>
-        ) : null,
-    });
-  }, [navigation, name, isGroup, conversationId]);
 
   // Connect socket and join room
   useEffect(() => {
@@ -103,7 +102,6 @@ export default function ChatScreen() {
   // Send message or edit message
   async function handleSend(text: string, type: 'text' | 'image' | 'video' | 'file' | 'voice' = 'text') {
     if (editingMessage) {
-      // Edit mode (only text editing is supported)
       try {
         await api.api.patch(`/messages/${editingMessage.id}`, { content: text });
       } catch (err) {
@@ -112,7 +110,6 @@ export default function ChatScreen() {
         setEditingMessage(null);
       }
     } else {
-      // Send mode (via socket for instant broadcast)
       const socket = getSocket();
       if (socket?.connected) {
         socket.emit('send_message', {
@@ -137,15 +134,18 @@ export default function ChatScreen() {
 
     try {
       if (existingReaction) {
-        // Remove reaction
         await api.removeReaction(messageId, emoji);
       } else {
-        // Add reaction
         await api.addReaction(messageId, emoji);
       }
     } catch (err) {
       console.error('Failed to toggle reaction:', err);
     }
+  }
+
+  // Double-tap instantly adds ❤️ reaction
+  function handleDoubleTap(messageId: string) {
+    handleReactionPress(messageId, '❤️');
   }
 
   // Message long press overlay options
@@ -154,12 +154,76 @@ export default function ChatScreen() {
     setActionsVisible(true);
   }
 
+  // Coming soon alerts
+  function handleCallPress(type: 'audio' | 'video') {
+    Alert.alert(
+      'Coming Soon!',
+      `Homie is getting high-quality ${type} calls in a future update! Stay tuned. 🚀`,
+      [{ text: 'Cool!' }]
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Custom Instagram DMs Header */}
+      <View style={styles.customHeader}>
+        <View style={styles.headerLeftContainer}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backIcon}>‹</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.avatarAndName}
+            onPress={() => {
+              if (isGroup) {
+                navigation.navigate('GroupInfo', { conversationId });
+              }
+            }}
+          >
+            <Avatar
+              name={name}
+              avatarUrl={conversation?.avatar_url ?? conversation?.otherUser?.avatar_url}
+              size={36}
+              isOnline={!isGroup && isOnline}
+            />
+            <View style={styles.headerDetails}>
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                {name}
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                {isGroup
+                  ? `${conversation?.members?.length ?? 0} members`
+                  : isOnline
+                  ? 'Active now'
+                  : 'Active recently'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Right side icons: Phone, Video, Info */}
+        <View style={styles.headerRightContainer}>
+          <TouchableOpacity onPress={() => handleCallPress('audio')} style={styles.headerIconBtn}>
+            <Text style={styles.headerIcon}>📞</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => handleCallPress('video')} style={styles.headerIconBtn}>
+            <Text style={styles.headerIcon}>📹</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.headerIconBtn}
+            onPress={() => navigation.navigate('GroupInfo', { conversationId })}
+          >
+            <Text style={styles.headerIcon}>ℹ️</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {/* Messages List (Inverted for newest at bottom) */}
         <FlatList
@@ -170,7 +234,6 @@ export default function ChatScreen() {
           onEndReachedThreshold={0.2}
           contentContainerStyle={styles.listContent}
           renderItem={({ item, index }) => {
-            // Determine if we show sender name (only in groups, if sender is different than user, and next message is not from same sender)
             const nextItem = index > 0 ? chatMessages[index - 1] : null;
             const showName = isGroup && item.sender_id !== currentUserId && nextItem?.sender_id !== item.sender_id;
 
@@ -180,13 +243,14 @@ export default function ChatScreen() {
                 showSenderName={showName}
                 onLongPress={() => handleLongPress(item)}
                 onReactionPress={(emoji) => handleReactionPress(item.id, emoji)}
+                onDoubleTap={() => handleDoubleTap(item.id)}
               />
             );
           }}
           ListFooterComponent={
             isLoading ? (
               <View style={styles.spinner}>
-                <ActivityIndicator color={COLORS.primary} size="small" />
+                <ActivityIndicator color={COLORS.accent} size="small" />
               </View>
             ) : null
           }
@@ -194,11 +258,17 @@ export default function ChatScreen() {
 
         {/* Dynamic Typing indicator bubble inside the chat window */}
         {otherTypingUsers.length > 0 && (
-          <View style={styles.typingContainer}>
-            <Text style={styles.typingText}>
-              {otherTypingUsers.map((u) => u.userName.split(' ')[0]).join(', ')}{' '}
-              {otherTypingUsers.length === 1 ? 'is' : 'are'} typing...
-            </Text>
+          <View style={styles.typingBubbleContainer}>
+            <View style={styles.typingAvatarWrapper}>
+              <Avatar
+                name={otherTypingUsers[0].userName}
+                avatarUrl={null}
+                size={24}
+              />
+            </View>
+            <View style={styles.typingBubble}>
+              <Text style={styles.typingBubbleText}>...</Text>
+            </View>
           </View>
         )}
 
@@ -239,7 +309,64 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: '#000000', // Pure black
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#262626',
+    backgroundColor: '#000000',
+  },
+  headerLeftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  backBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  backIcon: {
+    fontSize: 34,
+    color: '#ffffff',
+    fontWeight: '300',
+    marginTop: -4,
+  },
+  avatarAndName: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 4,
+  },
+  headerDetails: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#8e8e8e',
+    marginTop: 1,
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginRight: 6,
+  },
+  headerIconBtn: {
+    padding: 6,
+  },
+  headerIcon: {
+    fontSize: 18,
   },
   listContent: {
     paddingVertical: SPACING.md,
@@ -248,21 +375,28 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     alignItems: 'center',
   },
-  headerInfoBtn: {
-    marginRight: SPACING.md,
-    paddingHorizontal: 8,
+  typingBubbleContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 8,
   },
-  headerInfoText: {
-    fontSize: 20,
+  typingAvatarWrapper: {
+    marginBottom: 2,
   },
-  typingContainer: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xs,
-    backgroundColor: 'transparent',
+  typingBubble: {
+    backgroundColor: '#1c1c1e',
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
   },
-  typingText: {
-    color: COLORS.primaryLight,
-    fontSize: 12,
-    fontStyle: 'italic',
+  typingBubbleText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: -4,
   },
 });

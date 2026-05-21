@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  LayoutAnimation,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -36,7 +37,6 @@ export default function ChatInput({
 }: ChatInputProps) {
   const [text, setText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
 
   // Audio Recording States
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -105,6 +105,9 @@ export default function ChatInput({
   }
 
   function handleTextChange(newText: string) {
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setText(newText);
     if (newText.trim().length > 0) {
       startTypingIndicator();
@@ -126,10 +129,9 @@ export default function ChatInput({
   
   async function pickImage() {
     try {
-      setShowOptions(false);
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Squaad needs access to your gallery to send photos.');
+        Alert.alert('Permission Denied', 'Homie needs access to your gallery to send photos.');
         return;
       }
 
@@ -151,10 +153,9 @@ export default function ChatInput({
 
   async function takePhoto() {
     try {
-      setShowOptions(false);
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Squaad needs camera access to capture photos.');
+        Alert.alert('Permission Denied', 'Homie needs camera access to capture photos.');
         return;
       }
 
@@ -175,7 +176,6 @@ export default function ChatInput({
 
   async function pickDocument() {
     try {
-      setShowOptions(false);
       const result = await DocumentPicker.getDocumentAsync({
         type: '*/*',
         copyToCacheDirectory: true,
@@ -191,7 +191,6 @@ export default function ChatInput({
     }
   }
 
-  // Common upload handler
   async function handleMediaUpload(localUri: string, type: 'image' | 'file' | 'voice') {
     setIsUploading(true);
     try {
@@ -209,14 +208,12 @@ export default function ChatInput({
 
   async function startRecording() {
     try {
-      setShowOptions(false);
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Squaad needs microphone access to record voice notes.');
+        Alert.alert('Permission Denied', 'Homie needs microphone access to record voice notes.');
         return;
       }
 
-      // Configure audio session for recording
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -230,7 +227,6 @@ export default function ChatInput({
       setIsRecording(true);
       setRecordDuration(0);
 
-      // Duration counter
       recordIntervalRef.current = setInterval(() => {
         setRecordDuration((prev) => prev + 1);
       }, 1000);
@@ -284,6 +280,8 @@ export default function ChatInput({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   }
 
+  const isTextEmpty = text.trim().length === 0;
+
   return (
     <View style={styles.container}>
       {/* Replying indicator panel */}
@@ -335,66 +333,49 @@ export default function ChatInput({
           </View>
         </View>
       ) : (
-        <>
-          {/* Attachment options pop-up */}
-          {showOptions && (
-            <View style={styles.optionsContainer}>
-              <TouchableOpacity style={styles.optionItem} onPress={pickImage}>
-                <Text style={styles.optionIcon}>🖼️</Text>
-                <Text style={styles.optionLabel}>Gallery</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.optionItem} onPress={takePhoto}>
-                <Text style={styles.optionIcon}>📷</Text>
-                <Text style={styles.optionLabel}>Camera</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.optionItem} onPress={pickDocument}>
-                <Text style={styles.optionIcon}>📄</Text>
-                <Text style={styles.optionLabel}>Document</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.optionItem} onPress={startRecording}>
-                <Text style={styles.optionIcon}>🎙️</Text>
-                <Text style={styles.optionLabel}>Voice Note</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+        <View style={styles.inputOuterContainer}>
+          {/* Camera Button on the Left */}
+          <TouchableOpacity style={styles.cameraIconContainer} onPress={takePhoto} disabled={isUploading}>
+            <Text style={styles.cameraIcon}>📷</Text>
+          </TouchableOpacity>
 
-          {/* Input textbox row */}
-          <View style={styles.inputRow}>
-            <TouchableOpacity
-              style={styles.attachmentButton}
-              onPress={() => setShowOptions(!showOptions)}
-            >
-              <Text style={[styles.attachmentIcon, showOptions ? styles.rotateIcon : null]}>+</Text>
-            </TouchableOpacity>
-
+          {/* Text Input area (with collapsing items inside or next to it) */}
+          <View style={styles.inputInnerContainer}>
             <TextInput
               ref={inputRef}
               value={text}
               onChangeText={handleTextChange}
-              placeholder="Send a message..."
-              placeholderTextColor={COLORS.textMuted}
+              placeholder="Message..."
+              placeholderTextColor={COLORS.textSecondary}
               style={styles.textInput}
               multiline
               maxLength={1000}
               editable={!isUploading}
             />
-            
+
             {isUploading ? (
-              <ActivityIndicator color={COLORS.primary} size="small" style={styles.uploadSpinner} />
+              <ActivityIndicator color={COLORS.accent} size="small" style={styles.uploadSpinner} />
+            ) : isTextEmpty ? (
+              /* Icons shown only when text is empty */
+              <View style={styles.collapsedIconsRow}>
+                <TouchableOpacity style={styles.insideIconBtn} onPress={startRecording}>
+                  <Text style={styles.insideIcon}>🎙️</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.insideIconBtn} onPress={pickImage}>
+                  <Text style={styles.insideIcon}>🖼️</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.insideIconBtn} onPress={pickDocument}>
+                  <Text style={styles.insideIcon}>📄</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
-              <TouchableOpacity
-                style={[styles.sendButton, text.trim().length === 0 ? styles.sendButtonDisabled : null]}
-                disabled={text.trim().length === 0}
-                onPress={handleSend}
-              >
-                <Text style={styles.sendButtonText}>Send</Text>
+              /* Send Arrow shown when text is entered */
+              <TouchableOpacity style={styles.sendIconBtn} onPress={handleSend}>
+                <Text style={styles.sendIcon}>➤</Text>
               </TouchableOpacity>
             )}
           </View>
-        </>
+        </View>
       )}
     </View>
   );
@@ -402,17 +383,16 @@ export default function ChatInput({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#09090b',
-    borderTopWidth: 1,
-    borderTopColor: '#18181b',
-    padding: SPACING.sm,
+    backgroundColor: '#000000',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   stateBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#18181b',
-    borderRadius: 8,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 14,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     marginBottom: SPACING.sm,
@@ -431,7 +411,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   editLabel: {
-    color: COLORS.secondary,
+    color: COLORS.primaryLight,
   },
   statePreview: {
     fontSize: 13,
@@ -441,7 +421,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#27272a',
+    backgroundColor: '#262626',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -450,97 +430,71 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  inputRow: {
+  inputOuterContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: '#18181b',
-    borderRadius: 22,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#27272a',
+    alignItems: 'center',
   },
-  attachmentButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#27272a',
+  cameraIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#262626',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.sm,
-    marginBottom: 2,
+    marginRight: 8,
   },
-  attachmentIcon: {
-    color: COLORS.textLight,
+  cameraIcon: {
     fontSize: 18,
-    fontWeight: '600',
   },
-  rotateIcon: {
-    transform: [{ rotate: '45deg' }],
+  inputInnerContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#262626',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    minHeight: 44,
   },
   textInput: {
     flex: 1,
-    color: COLORS.textLight,
+    color: '#ffffff',
     fontSize: 15,
     maxHeight: 120,
-    minHeight: 28,
-    paddingTop: Platform.OS === 'ios' ? 4 : 2,
-    paddingBottom: Platform.OS === 'ios' ? 4 : 2,
+    paddingVertical: 8,
+    marginRight: 8,
   },
-  sendButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    justifyContent: 'center',
+  collapsedIconsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: SPACING.sm,
-    marginBottom: 2,
+    gap: 12,
   },
-  sendButtonDisabled: {
-    opacity: 0.4,
+  insideIconBtn: {
+    padding: 2,
   },
-  sendButtonText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
+  insideIcon: {
+    fontSize: 18,
+  },
+  sendIconBtn: {
+    padding: 6,
+  },
+  sendIcon: {
+    fontSize: 18,
+    color: '#9b59f0', // Custom lavender arrow
+    fontWeight: 'bold',
   },
   uploadSpinner: {
-    marginLeft: SPACING.sm,
-    marginBottom: 6,
-  },
-  optionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#18181b',
-    borderRadius: 12,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-  optionItem: {
-    alignItems: 'center',
-  },
-  optionIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  optionLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '500',
+    padding: 4,
   },
   recordingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#18181b',
+    backgroundColor: '#262626',
     borderRadius: 22,
     paddingHorizontal: SPACING.md,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: COLORS.danger,
   },
   recordingIndicator: {
     flexDirection: 'row',
@@ -550,11 +504,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ef4444',
+    backgroundColor: COLORS.danger,
     marginRight: 8,
   },
   recordingText: {
-    color: COLORS.textLight,
+    color: COLORS.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -567,12 +521,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   cancelText: {
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     fontSize: 13,
     fontWeight: '600',
   },
   sendRecBtn: {
-    backgroundColor: '#ef4444',
+    backgroundColor: COLORS.danger,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 6,

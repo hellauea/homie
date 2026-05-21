@@ -83,8 +83,73 @@ app.use((_req, res) => {
 // ── Start Server ──
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
-httpServer.listen(PORT, () => {
-  console.log(`Squaad server running on port ${PORT}`);
+import { db } from './db/client';
+import { hashPassword } from './utils/password';
+
+async function seedJoyUser() {
+  const joyPhone = '+919606664929';
+  const joyPassword = 'JoyX';
+
+  try {
+    // 1. Ensure whitelisted
+    const { data: whitelistEntry } = await db
+      .from('whitelist')
+      .select('phone')
+      .eq('phone', joyPhone)
+      .maybeSingle();
+
+    if (!whitelistEntry) {
+      await db.from('whitelist').insert({ phone: joyPhone });
+      console.log(`[Seed] Whitelisted ${joyPhone}`);
+    }
+
+    // 2. Ensure user exists
+    const { data: existingUser } = await db
+      .from('users')
+      .select('id')
+      .eq('phone', joyPhone)
+      .maybeSingle();
+
+    if (!existingUser) {
+      const passwordHash = hashPassword(joyPassword);
+      const { error } = await db
+        .from('users')
+        .insert({
+          phone: joyPhone,
+          name: 'Joy',
+          password_hash: passwordHash,
+          is_active: true
+        });
+
+      if (error) {
+        console.error('[Seed] Failed to create seed user:', error.message);
+      } else {
+        console.log(`[Seed] Successfully seeded user Joy (${joyPhone}) with password JoyX`);
+      }
+    } else {
+      const { data: joyUser } = await db
+        .from('users')
+        .select('password_hash')
+        .eq('phone', joyPhone)
+        .maybeSingle();
+
+      if (joyUser && !joyUser.password_hash) {
+        const passwordHash = hashPassword(joyPassword);
+        await db
+          .from('users')
+          .update({ password_hash: passwordHash })
+          .eq('phone', joyPhone);
+        console.log(`[Seed] Updated Joy's password_hash to JoyX`);
+      }
+    }
+  } catch (err: any) {
+    console.error('[Seed] Pre-seed error:', err.message);
+  }
+}
+
+httpServer.listen(PORT, async () => {
+  console.log(`Homie server running on port ${PORT}`);
+  await seedJoyUser();
 });
 
 export { app, httpServer, io };

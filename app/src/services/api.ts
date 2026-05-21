@@ -33,11 +33,13 @@ export interface VerifyTokenResponse {
   };
 }
 
-export async function verifyFirebaseToken(
-  idToken: string
+export async function loginUser(
+  phone: string,
+  password: string
 ): Promise<VerifyTokenResponse> {
-  const res = await api.post<VerifyTokenResponse>('/auth/verify-token', {
-    idToken,
+  const res = await api.post<VerifyTokenResponse>('/auth/login', {
+    phone,
+    password,
   });
   return res.data;
 }
@@ -45,6 +47,7 @@ export async function verifyFirebaseToken(
 export interface RegisterPayload {
   setupToken: string;
   name: string;
+  password: string;
   avatarUrl?: string;
 }
 

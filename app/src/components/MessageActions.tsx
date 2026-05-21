@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Clipboard,
+  Alert,
 } from 'react-native';
 import { Message } from '../types';
 import { COLORS, SPACING } from '../utils/constants';
+import { useAuthStore } from '../store/authStore';
 
 interface MessageActionsProps {
   visible: boolean;
@@ -21,7 +23,8 @@ interface MessageActionsProps {
   onDelete: (message: Message) => void;
 }
 
-const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '👏'];
+// Instagram reaction set
+const EMOJIS = ['❤️', '😂', '😮', '😢', '🙏', '🔥'];
 
 export default function MessageActions({
   visible,
@@ -34,7 +37,7 @@ export default function MessageActions({
 }: MessageActionsProps) {
   if (!message) return null;
 
-  const currentUserId = useAuthStoreState();
+  const currentUserId = useAuthStoreId();
   const isSelf = message.sender_id === currentUserId;
 
   // 5-minute edit window check
@@ -81,7 +84,7 @@ export default function MessageActions({
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.sheet}>
-              {/* Emojis row */}
+              {/* Emoji reaction row — Instagram style floating bar */}
               <View style={styles.emojiRow}>
                 {EMOJIS.map((emoji) => (
                   <TouchableOpacity
@@ -95,33 +98,43 @@ export default function MessageActions({
                     <Text style={styles.emojiText}>{emoji}</Text>
                   </TouchableOpacity>
                 ))}
+                {/* Plus button for more reactions */}
+                <TouchableOpacity
+                  style={[styles.emojiButton, styles.plusButton]}
+                  onPress={() => {
+                    // Could open a full emoji picker in the future
+                    onClose();
+                  }}
+                >
+                  <Text style={styles.plusText}>＋</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Action list */}
               <View style={styles.actionList}>
                 <TouchableOpacity style={styles.actionButton} onPress={handleReplyClick}>
-                  <Text style={styles.actionButtonText}>💬 Reply & Quote</Text>
+                  <Text style={styles.actionIcon}>↩</Text>
+                  <Text style={styles.actionButtonText}>Reply</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
-                  <Text style={styles.actionButtonText}>📋 Copy Text</Text>
+                  <Text style={styles.actionIcon}>📋</Text>
+                  <Text style={styles.actionButtonText}>Copy</Text>
                 </TouchableOpacity>
 
                 {isEditable && (
                   <TouchableOpacity style={styles.actionButton} onPress={handleEditClick}>
-                    <Text style={[styles.actionButtonText, styles.editAction]}>✏️ Edit Message</Text>
+                    <Text style={styles.actionIcon}>✏️</Text>
+                    <Text style={styles.actionButtonText}>Edit</Text>
                   </TouchableOpacity>
                 )}
 
                 {isDeletable && (
                   <TouchableOpacity style={styles.actionButton} onPress={handleDeleteClick}>
-                    <Text style={[styles.actionButtonText, styles.deleteAction]}>🗑️ Delete for Everyone</Text>
+                    <Text style={styles.actionIcon}>🗑️</Text>
+                    <Text style={[styles.actionButtonText, styles.deleteAction]}>Unsend</Text>
                   </TouchableOpacity>
                 )}
-
-                <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={onClose}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -131,71 +144,71 @@ export default function MessageActions({
   );
 }
 
-// Inline helper to avoid loading React hooks outside render
-import { useAuthStore } from '../store/authStore';
-function useAuthStoreState() {
+function useAuthStoreId() {
   return useAuthStore((state) => state.user?.id) || '';
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#18181b', // slate card
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: '#27272a',
+    backgroundColor: '#262626',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34, // safe area bottom
   },
   emojiRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-    marginBottom: SPACING.sm,
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#363636',
   },
   emojiButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#363636',
   },
   emojiText: {
-    fontSize: 26,
+    fontSize: 22,
+  },
+  plusButton: {
+    backgroundColor: '#363636',
+  },
+  plusText: {
+    fontSize: 20,
+    color: '#ffffff',
+    fontWeight: '300',
   },
   actionList: {
-    paddingTop: SPACING.sm,
+    paddingTop: 8,
   },
   actionButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.sm,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  actionIcon: {
+    fontSize: 18,
+    marginRight: 14,
+    width: 24,
+    textAlign: 'center',
   },
   actionButtonText: {
     fontSize: 16,
-    color: COLORS.textPrimary,
-    fontWeight: '500',
-  },
-  editAction: {
-    color: COLORS.secondary,
+    color: '#ffffff',
+    fontWeight: '400',
   },
   deleteAction: {
-    color: COLORS.danger,
-  },
-  cancelButton: {
-    marginTop: SPACING.md,
-    backgroundColor: '#27272a',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-    fontSize: 15,
+    color: '#ed4956',
   },
 });

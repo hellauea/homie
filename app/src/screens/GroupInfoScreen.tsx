@@ -295,11 +295,11 @@ export default function GroupInfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: '#000000',
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   adminBadgeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: COLORS.secondary,
+    color: COLORS.primaryLight,
   },
   removeBtn: {
     paddingHorizontal: 12,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#09090b',
+    backgroundColor: '#000000',
   },
   modalHeader: {
     flexDirection: 'row',

@@ -14,25 +14,23 @@ export function formatMessageTime(isoString: string): string {
 }
 
 /**
- * Formats conversation date for the feed view list: e.g. "Today", "Yesterday", "Mon", "12 May"
+ * Instagram-style relative timestamp for conversation list:
+ * "now", "2m", "14m", "1h", "3h", "yesterday", "2d", "1w", "12 May"
  */
 export function formatConversationDate(isoString: string): string {
   if (!isoString) return '';
   const now = dayjs();
   const date = dayjs(isoString);
-  
-  if (date.isSame(now, 'day')) {
-    return date.format('h:mm A');
-  }
-  
-  if (date.isSame(now.subtract(1, 'day'), 'day')) {
-    return 'Yesterday';
-  }
-  
-  if (date.isAfter(now.subtract(6, 'days'))) {
-    return date.format('ddd'); // e.g. "Mon"
-  }
-  
+  const diffMinutes = now.diff(date, 'minute');
+  const diffHours = now.diff(date, 'hour');
+  const diffDays = now.diff(date, 'day');
+
+  if (diffMinutes < 1) return 'now';
+  if (diffMinutes < 60) return `${diffMinutes}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays === 1 || date.isSame(now.subtract(1, 'day'), 'day')) return 'yesterday';
+  if (diffDays < 7) return `${diffDays}d`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w`;
   return date.format('D MMM'); // e.g. "12 May"
 }
 

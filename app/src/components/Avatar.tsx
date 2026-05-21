@@ -43,21 +43,42 @@ export default function Avatar({ name, avatarUrl, size = 44, isOnline = false }:
   const color = getHashColor(name);
   const initials = getInitials(name);
   const fontSize = size * 0.4;
-  const presenceSize = Math.max(10, size * 0.25);
+  const presenceSize = Math.max(10, size * 0.28);
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       {avatarUrl ? (
         <Image
           source={{ uri: avatarUrl }}
-          style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
+          style={[
+            styles.image,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+            },
+          ]}
         />
       ) : (
-        <View style={[styles.fallback, { width: size, height: size, borderRadius: size / 2, backgroundColor: color }]}>
+        <View
+          style={[
+            styles.fallback,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor: color,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+            },
+          ]}
+        >
           <Text style={[styles.initials, { fontSize, fontWeight: '700' }]}>{initials}</Text>
         </View>
       )}
-      
+
       {isOnline && (
         <View
           style={[
@@ -92,8 +113,8 @@ const styles = StyleSheet.create({
   },
   presence: {
     position: 'absolute',
-    backgroundColor: '#10b981', // Emerald presence dot
+    backgroundColor: COLORS.onlineGreen,
     borderWidth: 2,
-    borderColor: '#09090b', // Matches page background
+    borderColor: COLORS.background,
   },
 });

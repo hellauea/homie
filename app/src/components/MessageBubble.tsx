@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import { Message } from '../types';
 import { COLORS, SPACING } from '../utils/constants';
@@ -21,6 +22,7 @@ interface MessageBubbleProps {
   message: Message;
   onLongPress: () => void;
   onReactionPress: (emoji: string) => void;
+  onDoubleTap?: () => void;
   showSenderName?: boolean;
 }
 
@@ -28,11 +30,26 @@ export default function MessageBubble({
   message,
   onLongPress,
   onReactionPress,
+  onDoubleTap,
   showSenderName = false,
 }: MessageBubbleProps) {
   const currentUserId = useAuthStore((state) => state.user?.id) || '';
   const isSelf = message.sender_id === currentUserId;
   const isDeleted = message.type === 'deleted';
+
+  // Double-tap detection
+  const [lastTap, setLastTap] = useState(0);
+
+  function handlePress() {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      // Double tap detected
+      onDoubleTap?.();
+      setLastTap(0);
+    } else {
+      setLastTap(now);
+    }
+  }
 
   // State for image fullscreen modal
   const [imgModalVisible, setImgModalVisible] = useState(false);
@@ -95,7 +112,7 @@ export default function MessageBubble({
     }
   }
 
-  function formatTime(ms: number) {
+  function formatAudioTime(ms: number) {
     if (isNaN(ms) || ms <= 0) return '0:00';
     const totalSecs = Math.floor(ms / 1000);
     const mins = Math.floor(totalSecs / 60);
@@ -115,7 +132,7 @@ export default function MessageBubble({
 
   function renderBubbleContent() {
     if (isDeleted) {
-      return <Text style={styles.deletedText}>🚫 Message deleted</Text>;
+      return <Text style={styles.deletedText}>Message unsent</Text>;
     }
 
     switch (message.type) {
@@ -142,7 +159,7 @@ export default function MessageBubble({
                   style={styles.closeFullscreenBtn}
                   onPress={() => setImgModalVisible(false)}
                 >
-                  <Text style={styles.closeText}>✕ Close</Text>
+                  <Text style={styles.closeText}>✕</Text>
                 </TouchableOpacity>
                 <Image
                   source={{ uri: message.content ?? '' }}
@@ -159,19 +176,33 @@ export default function MessageBubble({
         return (
           <View style={styles.voicePlayer}>
             {isLoadingAudio ? (
-              <ActivityIndicator color={isSelf ? '#fff' : COLORS.primary} size="small" style={styles.playBtn} />
+              <ActivityIndicator color="#ffffff" size="small" style={styles.playBtn} />
             ) : (
               <TouchableOpacity onPress={togglePlayAudio} style={styles.playBtn}>
-                <Text style={styles.playBtnText}>{isPlaying ? '⏸️' : '▶️'}</Text>
+                <Text style={styles.playBtnText}>{isPlaying ? '⏸' : '▶'}</Text>
               </TouchableOpacity>
             )}
 
             <View style={styles.waveformContainer}>
-              <View style={styles.track}>
-                <View style={[styles.progress, { width: `${audioProgress * 100}%` }]} />
+              {/* Simulated waveform bars */}
+              <View style={styles.waveformBars}>
+                {[3, 6, 4, 8, 5, 7, 3, 6, 8, 4, 7, 5, 3, 6, 4, 8, 5, 7, 3, 5].map((h, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.waveBar,
+                      {
+                        height: h * 2,
+                        backgroundColor: i / 20 <= audioProgress
+                          ? '#ffffff'
+                          : 'rgba(255,255,255,0.3)',
+                      },
+                    ]}
+                  />
+                ))}
               </View>
-              <Text style={[styles.durationText, isSelf ? styles.timeSelf : styles.timeOther]}>
-                {formatTime(audioPosition)} / {formatTime(audioDuration || 0)}
+              <Text style={styles.durationText}>
+                {formatAudioTime(audioPosition || audioDuration)}
               </Text>
             </View>
           </View>
@@ -191,7 +222,7 @@ export default function MessageBubble({
               <Text style={styles.fileName} numberOfLines={1}>
                 {filename}
               </Text>
-              <Text style={styles.fileAction}>Tap to Download/Open</Text>
+              <Text style={styles.fileAction}>Tap to open</Text>
             </View>
           </TouchableOpacity>
         );
@@ -199,7 +230,7 @@ export default function MessageBubble({
       case 'text':
       default:
         return (
-          <Text style={[styles.messageText, isSelf ? styles.textSelf : styles.textOther]}>
+          <Text style={styles.messageText}>
             {message.content}
           </Text>
         );
@@ -208,6 +239,50 @@ export default function MessageBubble({
 
   // Render quoted reply preview if applicable
   const replyMsg = message.reply_to_message;
+
+  const renderBubbleWrapper = () => {
+    if (isSelf && !isDeleted && message.type !== 'image') {
+      return (
+        <LinearGradient
+          colors={['#6c35de', '#d63384'] as const}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={[styles.bubble, styles.bubbleSelf]}
+        >
+          {renderBubbleContent()}
+
+          {/* Time & Edited indicators */}
+          <View style={styles.meta}>
+            <Text style={styles.time}>
+              {formatMessageTime(message.created_at)}
+              {message.is_edited ? ' · edited' : ''}
+            </Text>
+          </View>
+        </LinearGradient>
+      );
+    } else {
+      return (
+        <View
+          style={[
+            styles.bubble,
+            isSelf ? styles.bubbleSelfSolid : styles.bubbleOther,
+            isDeleted ? styles.bubbleDeleted : null,
+            message.type === 'image' && !isDeleted ? styles.bubbleImageWrapper : null,
+          ]}
+        >
+          {renderBubbleContent()}
+
+          {/* Time & Edited indicators */}
+          <View style={[styles.meta, message.type === 'image' && !isDeleted ? styles.metaImage : null]}>
+            <Text style={styles.time}>
+              {formatMessageTime(message.created_at)}
+              {message.is_edited ? ' · edited' : ''}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+  };
 
   return (
     <View style={[styles.container, isSelf ? styles.alignRight : styles.alignLeft]}>
@@ -219,46 +294,36 @@ export default function MessageBubble({
 
         {/* Quoted Message Preview */}
         {replyMsg && (
-          <View style={[styles.replyContainer, isSelf ? styles.replySelf : styles.replyOther]}>
-            <Text style={styles.replySender} numberOfLines={1}>
-              {replyMsg.sender_id === currentUserId ? 'You' : replyMsg.sender?.name ?? 'Someone'}
-            </Text>
-            <Text style={styles.replyText} numberOfLines={1}>
-              {replyMsg.type === 'deleted'
-                ? 'Deleted message'
-                : replyMsg.type !== 'text'
-                ? `[Attachment: ${replyMsg.type}]`
-                : replyMsg.content}
-            </Text>
+          <View style={styles.replyContainer}>
+            <View style={styles.replyBorder} />
+            <View style={styles.replyContent}>
+              <Text style={styles.replySender} numberOfLines={1}>
+                {replyMsg.sender_id === currentUserId ? 'You' : replyMsg.sender?.name ?? 'Someone'}
+              </Text>
+              <Text style={styles.replyText} numberOfLines={1}>
+                {replyMsg.type === 'deleted'
+                  ? 'Message unsent'
+                  : replyMsg.type !== 'text'
+                  ? `Sent a ${replyMsg.type}`
+                  : replyMsg.content}
+              </Text>
+            </View>
           </View>
         )}
 
         {/* Message Content Bubble */}
         <TouchableOpacity
           activeOpacity={0.9}
+          onPress={isDeleted ? undefined : handlePress}
           onLongPress={isDeleted ? undefined : onLongPress}
           delayLongPress={200}
-          style={[
-            styles.bubble,
-            isSelf ? styles.bubbleSelf : styles.bubbleOther,
-            isDeleted ? styles.bubbleDeleted : null,
-            message.type === 'image' && !isDeleted ? styles.bubbleImageWrapper : null,
-          ]}
         >
-          {renderBubbleContent()}
-
-          {/* Time & Edited indicators */}
-          <View style={[styles.meta, message.type === 'image' && !isDeleted ? styles.metaImage : null]}>
-            <Text style={[styles.time, isSelf ? styles.timeSelf : styles.timeOther]}>
-              {formatMessageTime(message.created_at)}
-              {message.is_edited ? ' • Edited' : ''}
-            </Text>
-          </View>
+          {renderBubbleWrapper()}
         </TouchableOpacity>
 
-        {/* Reactions */}
+        {/* Reactions as overlaid pill */}
         {message.reactions && message.reactions.length > 0 && (
-          <View style={isSelf ? styles.reactionsRight : styles.reactionsLeft}>
+          <View style={[styles.reactionPill, isSelf ? styles.reactionPillRight : styles.reactionPillLeft]}>
             <ReactionBar
               reactions={message.reactions}
               currentUserId={currentUserId}
@@ -273,10 +338,10 @@ export default function MessageBubble({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
-    paddingHorizontal: SPACING.md,
+    marginVertical: 2,
+    paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
-    maxWidth: '85%',
+    maxWidth: '80%',
   },
   alignRight: {
     alignSelf: 'flex-end',
@@ -289,58 +354,61 @@ const styles = StyleSheet.create({
   },
   senderName: {
     fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.secondary,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
     marginBottom: 2,
-    marginLeft: 6,
+    marginLeft: 12,
   },
   replyContainer: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primaryLight,
-    paddingLeft: 8,
-    paddingVertical: 4,
+    flexDirection: 'row',
+    marginBottom: -2,
+    paddingLeft: 4,
     paddingRight: 12,
-    marginBottom: -4,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    opacity: 0.8,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
   },
-  replySelf: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  replyBorder: {
+    width: 3,
+    backgroundColor: '#6c35de',
+    borderRadius: 2,
+    marginRight: 8,
   },
-  replyOther: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  replyContent: {
+    flex: 1,
   },
   replySender: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.primaryLight,
-    marginBottom: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9b59f0',
+    marginBottom: 1,
   },
   replyText: {
     fontSize: 12,
-    color: '#ddd',
+    color: 'rgba(255,255,255,0.6)',
   },
   bubble: {
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    minWidth: 75,
+    minWidth: 70,
   },
   bubbleSelf: {
+    borderBottomRightRadius: 4,
+  },
+  bubbleSelfSolid: {
     backgroundColor: COLORS.bubbleSelf,
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
     backgroundColor: COLORS.bubbleOther,
     borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: '#27272a',
   },
   bubbleDeleted: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: '#262626',
     borderStyle: 'dashed',
   },
   deletedText: {
@@ -351,12 +419,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 15,
     lineHeight: 20,
-  },
-  textSelf: {
-    color: COLORS.textLight,
-  },
-  textOther: {
-    color: COLORS.textPrimary,
+    color: '#ffffff',
   },
   meta: {
     flexDirection: 'row',
@@ -366,20 +429,21 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.5)',
   },
-  timeSelf: {
-    color: 'rgba(255, 255, 255, 0.6)',
+  reactionPill: {
+    marginTop: -6,
+    zIndex: 10,
   },
-  timeOther: {
-    color: COLORS.textSecondary,
-  },
-  reactionsLeft: {
-    alignSelf: 'flex-start',
-  },
-  reactionsRight: {
+  reactionPillRight: {
     alignSelf: 'flex-end',
+    marginRight: 8,
   },
-  
+  reactionPillLeft: {
+    alignSelf: 'flex-start',
+    marginLeft: 8,
+  },
+
   // Image attachments
   bubbleImageWrapper: {
     paddingHorizontal: 4,
@@ -387,13 +451,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   imageContainer: {
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   bubbleImage: {
     width: 220,
     height: 180,
-    borderRadius: 12,
+    borderRadius: 14,
   },
   metaImage: {
     marginRight: 6,
@@ -403,24 +467,26 @@ const styles = StyleSheet.create({
   // Fullscreen Modal
   fullscreenContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: 'rgba(0, 0, 0, 0.97)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeFullscreenBtn: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 30,
+    top: Platform.OS === 'ios' ? 60 : 40,
     right: 20,
     zIndex: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
   fullscreenImage: {
     width: '100%',
@@ -431,38 +497,39 @@ const styles = StyleSheet.create({
   voicePlayer: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 190,
+    width: 200,
     paddingVertical: 4,
   },
   playBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
   },
   playBtnText: {
-    fontSize: 14,
+    fontSize: 13,
+    color: '#fff',
   },
   waveformContainer: {
     flex: 1,
   },
-  track: {
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 2,
-    width: '100%',
-    marginBottom: 4,
-    overflow: 'hidden',
+  waveformBars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 20,
+    gap: 2,
   },
-  progress: {
-    height: '100%',
-    backgroundColor: '#fff',
+  waveBar: {
+    width: 3,
+    borderRadius: 2,
   },
   durationText: {
     fontSize: 10,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 2,
   },
 
   // Document files
@@ -473,14 +540,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: SPACING.sm,
     width: 200,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
   },
   fileIconBox: {
     width: 36,
     height: 36,
     borderRadius: 6,
-    backgroundColor: COLORS.primary,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
@@ -497,7 +562,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fileAction: {
-    color: COLORS.textMuted,
+    color: 'rgba(255,255,255,0.5)',
     fontSize: 10,
     marginTop: 2,
   },

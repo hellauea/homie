@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    height: 54, // Fixed uniform height
     fontSize: 16,
     marginBottom: 20,
     borderWidth: 1,
@@ -331,18 +331,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
     marginBottom: 20,
+    height: 54, // Same fixed height to prevent vertical stretching
   },
   passwordInput: {
     flex: 1,
     color: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    height: '100%',
     fontSize: 16,
   },
   eyeButton: {
     paddingHorizontal: 16,
     height: '100%',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   eyeText: {
     fontSize: 18,

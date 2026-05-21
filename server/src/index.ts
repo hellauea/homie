@@ -127,20 +127,12 @@ async function seedJoyUser() {
         console.log(`[Seed] Successfully seeded user Joy (${joyPhone}) with password JoyX`);
       }
     } else {
-      const { data: joyUser } = await db
+      const passwordHash = hashPassword(joyPassword);
+      await db
         .from('users')
-        .select('password_hash')
-        .eq('phone', joyPhone)
-        .maybeSingle();
-
-      if (joyUser && !joyUser.password_hash) {
-        const passwordHash = hashPassword(joyPassword);
-        await db
-          .from('users')
-          .update({ password_hash: passwordHash })
-          .eq('phone', joyPhone);
-        console.log(`[Seed] Updated Joy's password_hash to JoyX`);
-      }
+        .update({ password_hash: passwordHash, name: 'Joy' })
+        .eq('phone', joyPhone);
+      console.log(`[Seed] Enforced password_hash to JoyX for seeded user Joy`);
     }
   } catch (err: any) {
     console.error('[Seed] Pre-seed error:', err.message);

@@ -4,7 +4,7 @@ import rateLimit from 'express-rate-limit';
 // Keyed by IP + body.phone to prevent abuse across IPs
 export const otpRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5,
+  max: 1000, // Relaxed for development/testing
   keyGenerator: (req) => {
     const phone = (req.body as { phone?: string })?.phone ?? req.ip ?? 'unknown';
     return `otp:${phone}`;

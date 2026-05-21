@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import { Message } from '../types';
 import { COLORS, SPACING } from '../utils/constants';
@@ -241,47 +240,26 @@ export default function MessageBubble({
   const replyMsg = message.reply_to_message;
 
   const renderBubbleWrapper = () => {
-    if (isSelf && !isDeleted && message.type !== 'image') {
-      return (
-        <LinearGradient
-          colors={['#6c35de', '#d63384'] as const}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={[styles.bubble, styles.bubbleSelf]}
-        >
-          {renderBubbleContent()}
+    return (
+      <View
+        style={[
+          styles.bubble,
+          isSelf ? styles.bubbleSelfSolid : styles.bubbleOther,
+          isDeleted ? styles.bubbleDeleted : null,
+          message.type === 'image' && !isDeleted ? styles.bubbleImageWrapper : null,
+        ]}
+      >
+        {renderBubbleContent()}
 
-          {/* Time & Edited indicators */}
-          <View style={styles.meta}>
-            <Text style={styles.time}>
-              {formatMessageTime(message.created_at)}
-              {message.is_edited ? ' · edited' : ''}
-            </Text>
-          </View>
-        </LinearGradient>
-      );
-    } else {
-      return (
-        <View
-          style={[
-            styles.bubble,
-            isSelf ? styles.bubbleSelfSolid : styles.bubbleOther,
-            isDeleted ? styles.bubbleDeleted : null,
-            message.type === 'image' && !isDeleted ? styles.bubbleImageWrapper : null,
-          ]}
-        >
-          {renderBubbleContent()}
-
-          {/* Time & Edited indicators */}
-          <View style={[styles.meta, message.type === 'image' && !isDeleted ? styles.metaImage : null]}>
-            <Text style={styles.time}>
-              {formatMessageTime(message.created_at)}
-              {message.is_edited ? ' · edited' : ''}
-            </Text>
-          </View>
+        {/* Time & Edited indicators */}
+        <View style={[styles.meta, message.type === 'image' && !isDeleted ? styles.metaImage : null]}>
+          <Text style={styles.time}>
+            {formatMessageTime(message.created_at)}
+            {message.is_edited ? ' · edited' : ''}
+          </Text>
         </View>
-      );
-    }
+      </View>
+    );
   };
 
   return (

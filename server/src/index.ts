@@ -142,6 +142,22 @@ async function seedJoyUser() {
 httpServer.listen(PORT, async () => {
   console.log(`Homie server running on port ${PORT}`);
   await seedJoyUser();
+
+  // ── Render Free Tier Keep-Alive Ping ──
+  // Pings its own public endpoint every 5 minutes to bypass Render's 15-minute inactivity spin-down.
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://homie-backend-kakj.onrender.com';
+  if (RENDER_URL) {
+    console.log(`[Keep-Alive] Self-ping scheduled for: ${RENDER_URL}/health`);
+    setInterval(async () => {
+      try {
+        const res = await fetch(`${RENDER_URL}/health`);
+        const data = await res.json() as { status: string };
+        console.log(`[Keep-Alive] Pinged ${RENDER_URL}/health - Status: ${res.status} (${data.status})`);
+      } catch (err: any) {
+        console.error(`[Keep-Alive] Self-ping failed:`, err.message);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+  }
 });
 
 export { app, httpServer, io };

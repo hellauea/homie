@@ -2,6 +2,7 @@ services:
   - type: web
     name: homie-backend
     runtime: node
+    plan: free
     repo: https://github.com/hellauea/homie
     branch: main
     rootDir: server

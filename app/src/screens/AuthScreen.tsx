@@ -22,12 +22,7 @@ type Step = 'login' | 'register';
 export default function AuthScreen() {
   const [step, setStep] = useState<Step>('login');
   const [phone, setPhone] = useState('+91');
-  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [setupToken, setSetupToken] = useState('');
 
@@ -57,14 +52,10 @@ export default function AuthScreen() {
       Alert.alert('Invalid number', 'Enter number in E.164 format: +919876543210');
       return;
     }
-    if (!password) {
-      Alert.alert('Password required', 'Please enter your password.');
-      return;
-    }
 
     setLoading(true);
     try {
-      const response = await loginUser(e164, password);
+      const response = await loginUser(e164);
 
       if (response.status === 'needs_registration') {
         // Whitelisted new user — transition to register step
@@ -92,21 +83,12 @@ export default function AuthScreen() {
       Alert.alert('Invalid Name', 'Name must be at least 2 characters.');
       return;
     }
-    if (registerPassword.length < 4) {
-      Alert.alert('Weak Password', 'Password must be at least 4 characters.');
-      return;
-    }
-    if (registerPassword !== confirmPassword) {
-      Alert.alert('Passwords Match Error', 'Passwords do not match.');
-      return;
-    }
 
     setLoading(true);
     try {
       const result = await registerUser({
         setupToken,
         name: name.trim(),
-        password: registerPassword,
       });
       await setAuth(result.user, result.token);
       await connectSocket();
@@ -147,26 +129,6 @@ export default function AuthScreen() {
               autoCorrect={false}
             />
 
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="••••••••"
-                placeholderTextColor="#555"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Text style={styles.eyeText}>{showPassword ? '👁️' : '🙈'}</Text>
-              </TouchableOpacity>
-            </View>
-
             <TouchableOpacity
               style={styles.button}
               onPress={handleLogin}
@@ -202,38 +164,6 @@ export default function AuthScreen() {
               maxLength={50}
             />
 
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="••••••••"
-                placeholderTextColor="#555"
-                secureTextEntry={!showRegisterPassword}
-                value={registerPassword}
-                onChangeText={setRegisterPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowRegisterPassword(!showRegisterPassword)}
-              >
-                <Text style={styles.eyeText}>{showRegisterPassword ? '👁️' : '🙈'}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor="#555"
-              secureTextEntry={!showRegisterPassword}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
             <TouchableOpacity
               style={styles.button}
               onPress={handleRegister}
@@ -250,9 +180,6 @@ export default function AuthScreen() {
               style={styles.backButton}
               onPress={() => {
                 setStep('login');
-                setPassword('');
-                setRegisterPassword('');
-                setConfirmPassword('');
               }}
             >
               <Text style={styles.backButtonText}>← Back to Login</Text>

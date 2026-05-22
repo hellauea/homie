@@ -35,11 +35,10 @@ export interface VerifyTokenResponse {
 
 export async function loginUser(
   phone: string,
-  password: string
+  password?: string
 ): Promise<VerifyTokenResponse> {
   const res = await api.post<VerifyTokenResponse>('/auth/login', {
     phone,
-    password,
   });
   return res.data;
 }
@@ -47,7 +46,7 @@ export async function loginUser(
 export interface RegisterPayload {
   setupToken: string;
   name: string;
-  password: string;
+  password?: string;
   avatarUrl?: string;
 }
 
@@ -64,7 +63,11 @@ export interface RegisterResponse {
 export async function registerUser(
   payload: RegisterPayload
 ): Promise<RegisterResponse> {
-  const res = await api.post<RegisterResponse>('/auth/register', payload);
+  const res = await api.post<RegisterResponse>('/auth/register', {
+    setupToken: payload.setupToken,
+    name: payload.name,
+    avatarUrl: payload.avatarUrl,
+  });
   return res.data;
 }
 

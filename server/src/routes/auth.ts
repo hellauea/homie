@@ -10,10 +10,10 @@ const router = Router();
 
 // POST /auth/login
 router.post('/login', otpRateLimit, async (req: Request, res: Response): Promise<void> => {
-  const { phone, password } = req.body as { phone?: string; password?: string };
+  const { phone } = req.body as { phone?: string };
 
-  if (!phone || typeof phone !== 'string' || !password || typeof password !== 'string') {
-    res.status(400).json({ error: 'missing_fields', message: 'Phone and password are required' });
+  if (!phone || typeof phone !== 'string') {
+    res.status(400).json({ error: 'missing_fields', message: 'Phone number is required' });
     return;
   }
 
@@ -27,7 +27,7 @@ router.post('/login', otpRateLimit, async (req: Request, res: Response): Promise
     // 1. Check if user already exists
     const { data: existingUser } = await db
       .from('users')
-      .select('id, phone, name, password_hash, is_active')
+      .select('id, phone, name, is_active')
       .eq('phone', normalized)
       .maybeSingle();
 
@@ -37,19 +37,7 @@ router.post('/login', otpRateLimit, async (req: Request, res: Response): Promise
         return;
       }
 
-      // If user exists but has no password hash (legacy account), allow them to register a password
-      if (!existingUser.password_hash) {
-        const setupToken = signToken({ userId: 'pending', phone: normalized });
-        res.json({ status: 'needs_registration', phone: normalized, setupToken });
-        return;
-      }
-
-      const verified = verifyPassword(password, existingUser.password_hash);
-      if (!verified) {
-        res.status(401).json({ error: 'invalid_credentials', message: 'Incorrect password' });
-        return;
-      }
-
+      // Password-less login: Generate JWT immediately
       const token = signToken({ userId: existingUser.id, phone: existingUser.phone });
       res.json({
         status: 'ok',
@@ -82,25 +70,19 @@ router.post('/login', otpRateLimit, async (req: Request, res: Response): Promise
 
 // POST /auth/register
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { setupToken, name, password, avatarUrl } = req.body as {
+  const { setupToken, name, avatarUrl } = req.body as {
     setupToken?: string;
     name?: string;
-    password?: string;
     avatarUrl?: string;
   };
 
-  if (!setupToken || !name || !password) {
-    res.status(400).json({ error: 'missing_fields', message: 'setupToken, name, and password are required' });
+  if (!setupToken || !name) {
+    res.status(400).json({ error: 'missing_fields', message: 'setupToken and name are required' });
     return;
   }
 
   if (typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 50) {
     res.status(400).json({ error: 'invalid_name', message: 'Name must be 1-50 characters' });
-    return;
-  }
-
-  if (typeof password !== 'string' || password.length < 4) {
-    res.status(400).json({ error: 'invalid_password', message: 'Password must be at least 4 characters' });
     return;
   }
 
@@ -125,7 +107,8 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const passwordHash = hashPassword(password);
+    // Set a default placeholder password hash since authentication is removed
+    const passwordHash = hashPassword('no_password');
 
     // If user already exists but had no password, update it
     const { data: existingUser } = await db

@@ -14,7 +14,7 @@ export async function connectSocket(): Promise<Socket> {
 
   socket = io(BASE_URL, {
     auth: { token },
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: 10,
     reconnectionDelay: 2000,

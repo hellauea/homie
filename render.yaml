@@ -16,15 +16,15 @@ services:
       - key: SUPABASE_URL
         value: https://nonamejxizjuwfopzzat.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vbmFtZWp4aXpqdXdmb3B6emF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTIwOTU2MSwiZXhwIjoyMDk0Nzg1NTYxfQ.OukvpOPIQaicKMAM0EItFLK7th_SxLgS-uNR5s1cC8A
       - key: FIREBASE_PROJECT_ID
         value: squaad-chat
       - key: FIREBASE_CLIENT_EMAIL
         value: firebase-adminsdk-fbsvc@squaad-chat.iam.gserviceaccount.com
       - key: FIREBASE_PRIVATE_KEY
-        sync: false
+        value: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC622//tbtNtym7\nclljT6nXDdpyCSc5CNnRz1+HRGzKbqhpuoQPA3w7R97igWLvJbXh3rfAmGfyYCr3\nmsAru9/BEDI1Tz3x73zCxC+fPjwgzzfxirsZoSLBwtfEW/2OH5FdpA4qSvmgs/rq\nIATjqoVp7ylb7ddn3iNEhIATcgbqyfg8+FEPcX+577H4FRt28x/MyScLU7joecXZ\niPnx3UQzBbSBBScJUT44cGvIFoT/4KjatMVAlE5E1/o8T1UoEtA/XnpeFA3rjgDU\neHPStJHiwpJKOqferaNq3hL8YN1QmcEgMcjUBsAbvZdJrCSkld3VxcrfCNaD15GV\n17d8F7KXAgMBAAECggEAFwHs/PHeAbgzWcK/MeS9t16bzp3E6BdoZpafnxK0SIqu\njvIpz4Vw1wXG8mHXEjY0+n5HZt39MpFXyQwTbG8iIm4BmKHMsUz5Miwg5v0tPyb0\nrveTiRjXpD7+/U0MX+MQLZUFL3zy1rBCjXBq2bOF4ODTWV/kPYRTGF0uPfa01lTZ\nFPVyJJ5+P57fLBdwV60lh9V+aWbnaN0WuUJEWcCSv7CVnbDGgokKBo5Tj3PHHm4C\nCkIxGMXCrrIEjMVwS6zUKaHhbiNu2lIwq3u+8zClKOnA2zMNIW2L++c2YktGqEjT\n0QMaZZfOKHmQbcxhX7J7AF05jZH6JLKnOv5WBlBazQKBgQDpKBB32eg6hBQ8scfK\nNoelMMfJMVwLkPExmFMJqO12n12Ir+ctTizFylA49yld5bbrotNtb+dkQEoz6Er+\nzliKTG52RzV8qCQcF1MKcUtXlTrgc9lNAOeXS4sfgkWuH+jxi1tcJizZDz+dFoRP\nuUej1XwTpoiEz1kEOmUc2deK9QKBgQDNKhzPInMddMNOehKdDa1Q/NPRhZow+UvX\nChcA/Limb7ftsRhCPj3xdKprAc2NkL6rlkDCPFpB9Y7EKWlUbXTNTWX3HQtMkmwA\n44T7xlbVFZY7VRs3u3E0CIIJbhfrE3UF5g36EYnmyT7FAJvbtKo4lBWwuUUE/WtY\nZ5B0xBan2wKBgQDooi78RpGtgQdoH8JGgu4I5okQt40thSsC3wdLRh/ZEd2Tel9h\nFvUZTGmKzSGbLI68wbPPJ65qmrLu48GgR2aUZvp4TUiS3nlZBfS3IJ+Z/a3HMhAJ\nAvQQQzHG+IZp3DDigLdhVD2/PbWtGUBfA3D1iRbJzIm+adxZmaI1jS3A2QKBgQDE\nQ7MHm+cPmLF1k2XXBEx2m0ZuuyZED1gzwJ08/oYOAfWr1qxkQnKzV23nq/Pdp0gf\nkT8mEOIvEx+eHBd9ArCn7ZDLkudKOxBC0WRYDubmNR5gaAv/hrrGkhUDvGP5J8Xc\n/LUGMlz/gCkiAHEY/n2QXmlZhAK4wU09ZuVULnmV3QKBgGwAPHYCSmLRvv8Vk6V5\nzeJ1I887wKM9mwNpmrYFMIPlCd6bR1t7Nj8W4lo0AZ4sk8WmGDYsO4boAo74HwuY\npWjslKWNW+z60Me6O5d0oEFiohHA0L1bnezN47joiCDoWhEAQfOa43NzObNHht03\nyK8UhU5m6vXKwBQIUd4OzdRD\n-----END PRIVATE KEY-----\n"
       - key: JWT_SECRET
-        sync: false
+        value: aFbakesdftyuikjnbgresxcfgyujnbgtrdcvghjuhgfrdsfghujnbgfdsfghujnhgfredfghyuikjujnhyujhgtyujhgtyuhgfrfderfdswerfghjkijkijkiuh
       - key: JWT_EXPIRY
         value: 7d
       - key: CLOUDINARY_CLOUD_NAME
@@ -32,4 +32,4 @@ services:
       - key: CLOUDINARY_API_KEY
         value: "845859225287941"
       - key: CLOUDINARY_API_SECRET
-        sync: false
+        value: 71InyViiXzHzuPaSOcIGUtlTSy8

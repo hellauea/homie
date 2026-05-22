@@ -20,7 +20,7 @@ export default function ConversationItem({ conversation, onPress }: Conversation
   const onlineUsers = useUIStore((state) => state.onlineUsers);
 
   // Resolve display info for DM vs group
-  let displayName = conversation.name ?? 'Chat';
+  let displayName = conversation.name ?? (conversation.type === 'group' ? 'Group' : 'Chat');
   let avatarUrl = conversation.avatar_url;
   let isOnline = false;
 

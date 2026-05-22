@@ -48,7 +48,7 @@ export default function HomeScreen() {
 
   // Filter conversations locally based on search query
   const filteredConversations = conversations.filter((item) => {
-    let name = item.name ?? 'Group';
+    let name = item.name ?? (item.type === 'group' ? 'Group' : 'Chat');
     if (item.type === 'dm' && item.otherUser) {
       name = item.otherUser.name;
     }
@@ -115,9 +115,9 @@ export default function HomeScreen() {
           onRefresh={loadConversations}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
-            let name = item.name ?? 'Group';
+            let name = item.name ?? (item.type === 'group' ? 'Group' : 'Chat');
             if (item.type === 'dm' && item.otherUser) {
-              name = item.otherUser.name;
+               name = item.otherUser.name;
             }
             return (
               <ConversationItem

@@ -179,6 +179,7 @@ export default function ChatScreen() {
                 navigation.navigate('GroupInfo', { conversationId });
               }
             }}
+            activeOpacity={isGroup ? 0.7 : 1}
           >
             <Avatar
               name={name}
@@ -201,7 +202,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Right side icons: Phone, Video, Info */}
+        {/* Right side icons: Phone, Video */}
         <View style={styles.headerRightContainer}>
           <TouchableOpacity onPress={() => handleCallPress('audio')} style={styles.headerIconBtn}>
             <Text style={styles.headerIcon}>📞</Text>
@@ -210,20 +211,13 @@ export default function ChatScreen() {
           <TouchableOpacity onPress={() => handleCallPress('video')} style={styles.headerIconBtn}>
             <Text style={styles.headerIcon}>📹</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.headerIconBtn}
-            onPress={() => navigation.navigate('GroupInfo', { conversationId })}
-          >
-            <Text style={styles.headerIcon}>ℹ️</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 60}
       >
         {/* Messages List (Inverted for newest at bottom) */}
         <FlatList
@@ -244,6 +238,7 @@ export default function ChatScreen() {
                 onLongPress={() => handleLongPress(item)}
                 onReactionPress={(emoji) => handleReactionPress(item.id, emoji)}
                 onDoubleTap={() => handleDoubleTap(item.id)}
+                onReply={(msg) => setReplyingTo(msg)}
               />
             );
           }}

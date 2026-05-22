@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Message } from '../types';
@@ -23,6 +25,7 @@ interface MessageBubbleProps {
   onReactionPress: (emoji: string) => void;
   onDoubleTap?: () => void;
   showSenderName?: boolean;
+  onReply?: (message: Message) => void;
 }
 
 export default function MessageBubble({
@@ -31,10 +34,81 @@ export default function MessageBubble({
   onReactionPress,
   onDoubleTap,
   showSenderName = false,
+  onReply,
 }: MessageBubbleProps) {
   const currentUserId = useAuthStore((state) => state.user?.id) || '';
   const isSelf = message.sender_id === currentUserId;
   const isDeleted = message.type === 'deleted';
+
+  // Swipe to reply logic
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        if (isDeleted) return false;
+        
+        const { dx, dy } = gestureState;
+        // Only trigger gesture if movement is horizontal and exceeds threshold
+        const isHorizontal = Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
+        
+        if (isHorizontal) {
+          // If own message (isSelf), we only swipe left (dx < 0)
+          // If other user's message, we only swipe right (dx > 0)
+          if (isSelf && dx < 0) return true;
+          if (!isSelf && dx > 0) return true;
+        }
+        return false;
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        const { dx } = gestureState;
+        let dragAmount = 0;
+        if (isSelf) {
+          dragAmount = Math.max(dx, -70);
+        } else {
+          dragAmount = Math.min(dx, 70);
+        }
+        translateX.setValue(dragAmount);
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx } = gestureState;
+        const triggerThreshold = 45;
+        const activated = isSelf ? (dx < -triggerThreshold) : (dx > triggerThreshold);
+
+        if (activated && onReply) {
+          onReply(message);
+        }
+
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 60,
+          friction: 7,
+        }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      },
+    })
+  ).current;
+
+  const absTranslateX = Animated.multiply(translateX, isSelf ? -1 : 1);
+
+  const indicatorOpacity = absTranslateX.interpolate({
+    inputRange: [0, 30],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const indicatorScale = absTranslateX.interpolate({
+    inputRange: [0, 45],
+    outputRange: [0.5, 1],
+    extrapolate: 'clamp',
+  });
 
   // Double-tap detection
   const [lastTap, setLastTap] = useState(0);
@@ -264,7 +338,29 @@ export default function MessageBubble({
 
   return (
     <View style={[styles.container, isSelf ? styles.alignRight : styles.alignLeft]}>
-      <View style={styles.bubbleWrapper}>
+      {/* Reply indicator under the bubble */}
+      {!isDeleted && (
+        <Animated.View
+          style={[
+            styles.replyIndicator,
+            isSelf ? styles.replyIndicatorRight : styles.replyIndicatorLeft,
+            {
+              opacity: indicatorOpacity,
+              transform: [{ scale: indicatorScale }],
+            },
+          ]}
+        >
+          <Text style={styles.replyIndicatorText}>↩️</Text>
+        </Animated.View>
+      )}
+
+      <Animated.View
+        style={[
+          styles.bubbleWrapper,
+          { transform: [{ translateX }] }
+        ]}
+        {...panResponder.panHandlers}
+      >
         {/* Group Sender Name */}
         {showSenderName && !isSelf && message.sender && (
           <Text style={styles.senderName}>{message.sender.name}</Text>
@@ -309,7 +405,7 @@ export default function MessageBubble({
             />
           </View>
         )}
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -320,6 +416,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
     maxWidth: '80%',
+    position: 'relative',
+  },
+  replyIndicator: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#1c1c1e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0,
+    borderWidth: 0.5,
+    borderColor: '#3a3a3c',
+  },
+  replyIndicatorLeft: {
+    left: 12,
+  },
+  replyIndicatorRight: {
+    right: 12,
+  },
+  replyIndicatorText: {
+    fontSize: 13,
+    color: '#ffffff',
   },
   alignRight: {
     alignSelf: 'flex-end',

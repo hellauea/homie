@@ -21,7 +21,7 @@ type Step = 'login' | 'register';
 
 export default function AuthScreen() {
   const [step, setStep] = useState<Step>('login');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+91');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
@@ -32,6 +32,23 @@ export default function AuthScreen() {
   const [setupToken, setSetupToken] = useState('');
 
   const { setAuth } = useAuthStore();
+
+  const handlePhoneChange = (text: string) => {
+    // If user tries to delete the +91 prefix entirely, lock it to +91
+    if (text.length < 3) {
+      setPhone('+91');
+      return;
+    }
+    // If they paste or edit prefix incorrectly, extract numbers and re-apply +91
+    if (!text.startsWith('+91')) {
+      const digits = text.replace(/\D/g, '');
+      setPhone(`+91${digits}`);
+      return;
+    }
+    // Clean and allow only numeric characters after +91
+    const body = text.slice(3).replace(/\D/g, '');
+    setPhone(`+91${body}`);
+  };
 
   // ── Step 1: Login / Initiate Registration ──────────────────────────────────
   async function handleLogin() {
@@ -125,7 +142,7 @@ export default function AuthScreen() {
               placeholderTextColor="#555"
               keyboardType="phone-pad"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={handlePhoneChange}
               autoCapitalize="none"
               autoCorrect={false}
             />

@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: homie-backend
+    runtime: node
+    repo: https://github.com/hellauea/homie
+    branch: main
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        value: https://nonamejxizjuwfopzzat.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        value: squaad-chat
+      - key: FIREBASE_CLIENT_EMAIL
+        value: firebase-adminsdk-fbsvc@squaad-chat.iam.gserviceaccount.com
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRY
+        value: 7d
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dpvoapeg8
+      - key: CLOUDINARY_API_KEY
+        value: "845859225287941"
+      - key: CLOUDINARY_API_SECRET
+        sync: false
